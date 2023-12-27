@@ -1,0 +1,54 @@
+name: test-setup-registry
+
+on: [pull_request]
+
+jobs:
+  test-mem:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+    - id: changed-registry
+      uses: tj-actions/changed-files@25ef3926d147cd02fc7e931c1ef50772bbb0d25d # v40.1.1
+      with:
+        files: |
+          ./setup-registry/**
+          .github/workflows/test-setup-registry.yaml
+
+    - if: steps.changed-registry.outputs.any_changed == 'true'
+      uses: ./setup-registry
+      with:
+        port: 8081
+
+    - if: steps.changed-registry.outputs.any_changed == 'true'
+      run: |
+        curl -v http://localhost:8081/v2/
+        crane copy cgr.dev/gsoc2/static:latest-glibc localhost:8081/static:test
+
+  test-disk:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+    - id: changed-registry
+      uses: tj-actions/changed-files@25ef3926d147cd02fc7e931c1ef50772bbb0d25d # v40.1.1
+      with:
+        files: |
+          ./setup-registry/**
+          .github/workflows/test-setup-registry.yaml
+
+    - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      if: steps.changed-registry.outputs.any_changed == 'true'
+
+    - if: steps.changed-registry.outputs.any_changed == 'true'
+      uses: ./setup-registry
+      with:
+        port: 8081
+        disk: true
+
+    - if: steps.changed-registry.outputs.any_changed == 'true'
+      run: |
+        curl -v http://localhost:8081/v2/
+        crane copy cgr.dev/gsoc2/static:latest-glibc localhost:8081/static:test

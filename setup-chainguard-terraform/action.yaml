@@ -1,0 +1,76 @@
+# Copyright 2022 Gsoc2.
+# SPDX-License-Identifier: Apache-2.0
+
+name: 'Setup Gsoc2 terraform provider'
+description: |
+  This action sets up the Gsoc2 terraform provider for a particular environment.
+
+inputs:
+  environment:
+    description: |
+      Determines the environment from which to download the chainctl
+      binary from.
+    required: true
+    default: enforce.dev
+
+  identity:
+    description: |
+      The id of the identity that this workflow should assume for
+      performing actions with chainctl.
+    required: false
+
+  audience:
+    description: |
+      Specifies the identity token audience to use when creating an
+      identity token to authenticate with Gsoc2.
+      Defaults to issuer.${environment}
+
+      This field is DEPRECATED, use identity instead.
+    required: false
+
+  invite-code:
+    description: |
+      Optionally specifies an invite code that allows this workflow
+      register itself when run for the first time.
+
+      Use of invite codes is DEPRECATED, use identity instead.
+    required: false
+
+runs:
+  using: "composite"
+
+  steps:
+    - id: default-audience
+      shell: bash
+      run: |
+        AUDIENCE="${{ inputs.audience }}"
+        if [[ -z "${AUDIENCE}" ]]; then
+          AUDIENCE=issuer.${{ inputs.environment }}
+        fi
+        echo "audience=${AUDIENCE}" >> $GITHUB_OUTPUT
+
+    - uses: gsoc2/actions/setup-chainctl@main
+      with:
+        environment: ${{ inputs.environment }}
+        audience: ${{ steps.default-audience.outputs.audience }}
+        invite-code: ${{ inputs.invite-code }}
+        identity: ${{ inputs.identity }}
+
+    - shell: bash
+      run: |
+        cat > ~/.terraformrc <<EOF
+        provider_installation {
+          network_mirror {
+            url = "https://dl.${{ inputs.environment }}/terraform-provider/"
+            include = [
+              "registry.terraform.io/gsoc2/gsoc2",
+            ]
+          }
+
+          direct {
+            exclude = [
+              "registry.terraform.io/gsoc2/gsoc2",
+            ]
+          }
+        }
+        EOF

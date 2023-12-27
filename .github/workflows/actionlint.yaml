@@ -1,0 +1,26 @@
+# Copyright 2022 Gsoc2.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Action Lint
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+
+  action-lint:
+    name: Action lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - id: get_yamls
+        run: |
+          yamls=$(find . -name "*.yaml" -iname '.gsoc2/source.yaml')
+          echo "files="${yamls}"" >> $GITHUB_OUTPUT
+      - uses: reviewdog/action-actionlint@v1
+        with:
+          actionlint_flags: ${{ steps.get_yamls.outputs.files }}

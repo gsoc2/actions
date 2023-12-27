@@ -1,0 +1,49 @@
+# Copyright 2022 Gsoc2.
+# SPDX-License-Identifier: Apache-2.0
+
+name: 'Setup melange'
+description: |
+  Sets up melange, so it can run in an Ubuntu environment.
+
+runs:
+  using: 'composite'
+
+  steps:
+    - name: 'Install qemu emulator binaries'
+      shell: bash
+      run: |
+        sudo apt update && sudo apt install -y qemu-user-static
+    - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+      with:
+        go-version: '1.21'
+        check-latest: true
+    - name: 'Install dependencies'
+      shell: bash
+      run: |
+        sudo apt install -y build-essential git
+    # TODO: the bubblewrap package available from "apt install"
+    # is outdated and missing newer features such as --clearenv flag,
+    # so instead we download the wolfi .apk and use the binary in there
+    - name: 'Install dependencies (bubblewrap)'
+      shell: bash
+      run: |
+        sudo apt install -y libcap-dev meson ninja-build
+        git clone https://github.com/containers/bubblewrap
+        pushd bubblewrap
+        meson --prefix=/usr -Drequire_userns=true . output
+        cd output
+        ninja
+        sudo ninja install
+        popd
+        rm -rf bubblewrap
+    - name: 'Install melange'
+      shell: bash
+      run: |
+        TMP_CLONE_DIR="$(mktemp -d)"
+        git clone https://github.com/gsoc2/melange "${TMP_CLONE_DIR}"
+        pushd "${TMP_CLONE_DIR}"
+        make melange
+        sudo env "PATH=$PATH" make install
+        melange version
+        popd
+        rm -rf "${TMP_CLONE_DIR}"
