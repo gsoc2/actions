@@ -40,7 +40,7 @@ jobs:
     - uses: ./whereami # Log where I am.
 
     - id: changed-kind
-      uses: tj-actions/changed-files@25ef3926d147cd02fc7e931c1ef50772bbb0d25d # v40.1.1
+      uses: tj-actions/changed-files@e052d30e1c0bdf27cd806b01ca3b393f47b50c62 # v44.1.0
       with:
         files: |
           ./setup-kind/**
